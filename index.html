@@ -52,6 +52,11 @@
             background: linear-gradient(135deg, #ffa726, #ff7043);
         }
         
+        /* État: erreur */
+        body.error {
+            background: linear-gradient(135deg, #9e9e9e, #616161);
+        }
+        
         .live-indicator {
             font-size: 60px;
             margin-bottom: 20px;
@@ -67,6 +72,10 @@
         
         .blink {
             animation: blink 1.5s infinite;
+        }
+        
+        .bounce {
+            animation: bounce 1s infinite;
         }
         
         @keyframes pulse {
@@ -85,6 +94,11 @@
             51%, 100% { opacity: 0.3; }
         }
         
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
         h1 {
             font-size: 2.5em;
             margin-bottom: 20px;
@@ -96,6 +110,14 @@
             margin-bottom: 30px;
             opacity: 0.9;
             line-height: 1.4;
+        }
+        
+        .stream-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .countdown {
@@ -162,6 +184,12 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
+        .method-info {
+            font-size: 0.9em;
+            opacity: 0.7;
+            margin-top: 10px;
+        }
+        
         .loading-dots {
             display: inline-block;
         }
@@ -181,6 +209,35 @@
         }
         
         .hidden { display: none; }
+        
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #333;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
         
         @media (max-width: 600px) {
             .container {
@@ -202,6 +259,11 @@
                 padding: 12px 20px;
                 font-size: 1em;
             }
+            
+            .debug-info {
+                font-size: 10px;
+                padding: 5px;
+            }
         }
     </style>
 </head>
@@ -212,27 +274,40 @@
             <div class="live-indicator rotate">🔍</div>
             <h1>Recherche en cours</h1>
             <p class="subtitle">
-                Nous cherchons une diffusion en direct<br>
+                Vérification des diffusions en direct<br>
                 <span class="loading-dots">
                     <span>.</span><span>.</span><span>.</span>
                 </span>
             </p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="method-info">
+                <span id="current-method">Méthode: Analyse du flux RSS</span>
+            </div>
         </div>
         
         <!-- État: diffusion trouvée -->
         <div id="live-found-state" class="hidden">
             <div class="live-indicator pulse">🔴</div>
             <h1>Diffusion en direct trouvée !</h1>
-            <p class="subtitle">Redirection vers la diffusion en cours</p>
+            <div class="stream-info">
+                <p><strong id="stream-title">Titre de la diffusion</strong></p>
+                <p id="stream-duration">Démarré récemment</p>
+            </div>
             
             <div class="countdown">
                 Redirection dans <span id="timer">3</span> secondes
             </div>
             
             <div class="buttons">
-                <a href="https://youtube.com/channel/UC6u5Kliw-Ll-xipj-bKmxDQ/live" class="btn btn-primary" id="direct-link">
+                <a href="#" class="btn btn-primary" id="direct-link">
                     🎬 Regarder maintenant
                 </a>
+            </div>
+            
+            <div class="method-info">
+                Trouvé via: <span id="detection-method">RSS Feed</span>
             </div>
         </div>
         
@@ -246,10 +321,11 @@
             </p>
             
             <div class="info-box">
-                <p><strong>📺 Que faire ?</strong></p>
+                <p><strong>📺 Que faire en attendant ?</strong></p>
                 <p>• Revenez dans quelques minutes</p>
                 <p>• Activez les notifications sur la chaîne</p>
-                <p>• Consultez les réseaux sociaux pour les annonces</p>
+                <p>• Suivez les annonces sur les réseaux sociaux</p>
+                <p>• Consultez les précédentes diffusions</p>
             </div>
             
             <div class="buttons">
@@ -263,80 +339,443 @@
             </div>
             
             <div class="refresh-timer">
-                Vérification automatique dans <span id="refresh-timer">30</span> secondes
+                Nouvelle vérification dans <span id="refresh-timer">15</span> secondes
             </div>
         </div>
+        
+        <!-- État: erreur temporaire -->
+        <div id="error-state" class="hidden">
+            <div class="live-indicator bounce">⚠️</div>
+            <h1>Vérification temporairement indisponible</h1>
+            <p class="subtitle">
+                Problème technique temporaire.<br>
+                Nouvelle tentative automatique en cours...
+            </p>
+            
+            <div class="info-box">
+                <p><strong>🔧 En attendant :</strong></p>
+                <p>• Ce n'est qu'un problème temporaire</p>
+                <p>• Vous pouvez essayer de visiter la chaîne directement</p>
+                <p>• La vérification reprendra automatiquement</p>
+            </div>
+            
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="checkAgain()">
+                    🔄 Réessayer maintenant
+                </button>
+                
+                <a href="https://youtube.com/channel/UC6u5Kliw-Ll-xipj-bKmxDQ/live" class="btn">
+                    📺 Aller à la chaîne
+                </a>
+            </div>
+            
+            <div class="refresh-timer">
+                Nouvelle tentative dans <span id="error-timer">15</span> secondes
+            </div>
+        </div>
+    </div>
+    
+    <!-- Debug Info -->
+    <div class="debug-info" id="debug-info">
+        [DEBUG] Initialisation...<br>
+        Méthodes: RSS + Page directe<br>
+        Intervalle: 15s
     </div>
     
     <script>
         // Configuration
         const CHANNEL_ID = 'UC6u5Kliw-Ll-xipj-bKmxDQ';
-        const API_KEY = ''; // Optionnel: ajoutez votre clé API YouTube pour une meilleure précision
+        const CHECK_INTERVAL = 15; // Vérification toutes les 15 secondes
+        
+        // CORS Proxies (plusieurs pour la redondance)
+        const CORS_PROXIES = [
+            'https://api.allorigins.win/get?url=',
+            'https://corsproxy.io/?',
+            'https://cors-anywhere.herokuapp.com/'
+        ];
+        
+        let currentProxyIndex = 0;
         
         // États
         const states = {
             SEARCHING: 'searching',
             LIVE_FOUND: 'live-found',
-            WAITING: 'waiting'
+            WAITING: 'waiting',
+            ERROR: 'error'
         };
         
         let currentState = states.SEARCHING;
         let refreshTimer = null;
         let countdownTimer = null;
+        let mainCheckInterval = null;
+        let lastStreamInfo = null;
+        let checkCount = 0;
+        
+        // Debug et statistiques
+        function updateDebugInfo(status, details = '') {
+            const debugEl = document.getElementById('debug-info');
+            const now = new Date().toLocaleTimeString();
+            debugEl.innerHTML = `
+                [DEBUG] Status: ${status}<br>
+                Dernière: ${now} (${checkCount} vérifications)<br>
+                Proxy: ${currentProxyIndex + 1}/${CORS_PROXIES.length} | ${details}
+            `;
+        }
         
         // Fonction pour changer d'état
         function setState(newState) {
-            // Cacher tous les états
             document.querySelectorAll('[id$="-state"]').forEach(el => {
                 el.classList.add('hidden');
             });
             
-            // Changer la classe du body
             document.body.className = newState;
-            
-            // Afficher le bon état
             document.getElementById(newState + '-state').classList.remove('hidden');
             
             currentState = newState;
         }
         
-        // Fonction pour vérifier s'il y a une diffusion active
-        async function checkForLiveStream() {
-            setState(states.SEARCHING);
-            
+        // Progress bar pour l'état de recherche
+        function updateProgress(percent) {
+            const progressFill = document.getElementById('progress-fill');
+            if (progressFill) {
+                progressFill.style.width = `${percent}%`;
+            }
+        }
+        
+        // MÉTHODE 1: Vérification via RSS Feed (plus stable)
+        async function checkWithRSS() {
             try {
-                // Méthode simple: vérifier si la page /live redirige vers une vidéo spécifique
-                // Cette méthode fonctionne sans API key
-                const response = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
-                    mode: 'no-cors'
+                updateDebugInfo('RSS check', 'Analyse du flux RSS');
+                document.getElementById('current-method').textContent = 'Méthode: Analyse du flux RSS YouTube';
+                updateProgress(25);
+                
+                const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`;
+                const proxy = CORS_PROXIES[currentProxyIndex];
+                const proxyUrl = proxy.includes('allorigins') ? 
+                    `${proxy}${encodeURIComponent(rssUrl)}` : 
+                    `${proxy}${rssUrl}`;
+                
+                const response = await fetch(proxyUrl, { 
+                    timeout: 12000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (compatible; StreamChecker/1.0)'
+                    }
                 });
                 
-                // Simulation: dans un environnement réel, vous pourriez vérifier le contenu
-                // Pour cette démo, nous allons simuler aléatoirement
-                const hasLiveStream = Math.random() > 0.7; // 30% de chance de trouver un stream
+                updateProgress(50);
                 
-                setTimeout(() => {
-                    if (hasLiveStream) {
-                        showLiveFound();
-                    } else {
-                        showWaiting();
+                if (!response.ok) throw new Error(`RSS HTTP ${response.status}`);
+                
+                let xmlText = '';
+                if (proxy.includes('allorigins')) {
+                    const data = await response.json();
+                    xmlText = data.contents;
+                } else {
+                    xmlText = await response.text();
+                }
+                
+                updateProgress(75);
+                
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(xmlText, 'text/xml');
+                
+                // Vérifier les erreurs de parsing
+                const parseError = xml.getElementsByTagName('parsererror');
+                if (parseError.length > 0) {
+                    throw new Error('XML parsing failed');
+                }
+                
+                const entries = xml.querySelectorAll('entry');
+                
+                if (entries.length > 0) {
+                    // Analyser les 3 dernières vidéos
+                    for (let i = 0; i < Math.min(3, entries.length); i++) {
+                        const entry = entries[i];
+                        const title = entry.querySelector('title')?.textContent || '';
+                        const published = entry.querySelector('published')?.textContent;
+                        const videoIdElement = entry.querySelector('videoId');
+                        
+                        if (!videoIdElement) continue;
+                        
+                        const videoId = videoIdElement.textContent;
+                        
+                        // Ignorer les Shorts
+                        if (title.toLowerCase().includes('#shorts') || title.length < 10) {
+                            continue;
+                        }
+                        
+                        // Vérifier si la vidéo est récente (moins de 8 heures)
+                        const publishedTime = new Date(published);
+                        const now = new Date();
+                        const hoursDiff = (now - publishedTime) / (1000 * 60 * 60);
+                        
+                        if (hoursDiff < 8) {
+                            updateProgress(85);
+                            
+                            // Vérifier si c'est vraiment en live
+                            const liveCheck = await verifyVideoIsLive(videoId, title, published);
+                            if (liveCheck && liveCheck.isLive) {
+                                updateProgress(100);
+                                return liveCheck;
+                            }
+                        }
                     }
-                }, 2000); // Simulation du temps de recherche
+                }
+                
+                updateProgress(100);
+                return { isLive: false, method: 'RSS Feed' };
                 
             } catch (error) {
-                console.log('Erreur lors de la vérification:', error);
-                // En cas d'erreur, on assume qu'il n'y a pas de stream
-                setTimeout(() => {
-                    showWaiting();
-                }, 2000);
+                console.error('RSS check failed:', error);
+                updateDebugInfo('RSS failed', error.message.substring(0, 20));
+                return null;
+            }
+        }
+        
+        // MÉTHODE 2: Vérification directe de la page /live
+        async function checkWithLivePage() {
+            try {
+                updateDebugInfo('Page check', 'Page /live directe');
+                document.getElementById('current-method').textContent = 'Méthode: Vérification de la page live';
+                updateProgress(25);
+                
+                const liveUrl = `https://www.youtube.com/channel/${CHANNEL_ID}/live`;
+                const proxy = CORS_PROXIES[currentProxyIndex];
+                const proxyUrl = proxy.includes('allorigins') ? 
+                    `${proxy}${encodeURIComponent(liveUrl)}` : 
+                    `${proxy}${liveUrl}`;
+                
+                const response = await fetch(proxyUrl, {
+                    timeout: 15000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+                
+                updateProgress(50);
+                
+                if (!response.ok) throw new Error(`Page HTTP ${response.status}`);
+                
+                let htmlContent = '';
+                if (proxy.includes('allorigins')) {
+                    const data = await response.json();
+                    htmlContent = data.contents;
+                } else {
+                    htmlContent = await response.text();
+                }
+                
+                updateProgress(75);
+                
+                // Chercher plusieurs indicateurs de diffusion en direct
+                const liveIndicators = [
+                    '"isLiveContent":true',
+                    '"liveBroadcastContent":"live"',
+                    'watching now',
+                    '"text":" watching"',
+                    'live streaming',
+                    'is-live',
+                    'LIVE'
+                ];
+                
+                const foundIndicators = liveIndicators.filter(indicator => 
+                    htmlContent.toLowerCase().includes(indicator.toLowerCase())
+                );
+                
+                updateProgress(90);
+                
+                if (foundIndicators.length >= 2) { // Besoin d'au moins 2 indicateurs pour confirmer
+                    // Essayer d'extraire le titre et d'autres infos
+                    let title = 'Diffusion en direct';
+                    
+                    const titleMatches = [
+                        /"title":"([^"]+)"/,
+                        /<title>([^<]+)<\/title>/,
+                        /"videoTitle":"([^"]+)"/
+                    ];
+                    
+                    for (const regex of titleMatches) {
+                        const match = htmlContent.match(regex);
+                        if (match && match[1]) {
+                            title = match[1]
+                                .replace(/\\u[\d\w]{4}/gi, '')
+                                .replace(/&quot;/g, '"')
+                                .replace(/&amp;/g, '&')
+                                .replace(/&lt;/g, '<')
+                                .replace(/&gt;/g, '>')
+                                .trim();
+                            
+                            if (title.length > 5 && title !== 'YouTube') {
+                                break;
+                            }
+                        }
+                    }
+                    
+                    updateProgress(100);
+                    
+                    return {
+                        isLive: true,
+                        title: title,
+                        url: liveUrl,
+                        publishedAt: new Date().toISOString(),
+                        method: 'Page Live',
+                        confidence: foundIndicators.length
+                    };
+                }
+                
+                updateProgress(100);
+                return { isLive: false, method: 'Page Live' };
+                
+            } catch (error) {
+                console.error('Live page check failed:', error);
+                updateDebugInfo('Page failed', error.message.substring(0, 20));
+                return null;
+            }
+        }
+        
+        // Vérifier si une vidéo spécifique est en live
+        async function verifyVideoIsLive(videoId, title, publishedAt) {
+            try {
+                const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                const proxy = CORS_PROXIES[currentProxyIndex];
+                const proxyUrl = proxy.includes('allorigins') ? 
+                    `${proxy}${encodeURIComponent(embedUrl)}` : 
+                    `${proxy}${embedUrl}`;
+                
+                const response = await fetch(proxyUrl, { timeout: 8000 });
+                if (!response.ok) return null;
+                
+                let content = '';
+                if (proxy.includes('allorigins')) {
+                    const data = await response.json();
+                    content = data.contents;
+                } else {
+                    content = await response.text();
+                }
+                
+                const livePatterns = [
+                    '"isLiveContent":true',
+                    'watching now',
+                    'live streaming',
+                    '"liveBroadcastContent":"live"'
+                ];
+                
+                const isLive = livePatterns.some(pattern => 
+                    content.toLowerCase().includes(pattern.toLowerCase())
+                );
+                
+                if (isLive) {
+                    return {
+                        isLive: true,
+                        videoId: videoId,
+                        title: title,
+                        publishedAt: publishedAt,
+                        url: `https://youtube.com/watch?v=${videoId}`,
+                        method: 'RSS + Embed verification'
+                    };
+                }
+                
+                return null;
+            } catch {
+                return null;
+            }
+        }
+        
+        // Fonction principale de vérification
+        async function checkForLiveStream() {
+            setState(states.SEARCHING);
+            clearAllTimers();
+            checkCount++;
+            
+            updateProgress(0);
+            updateDebugInfo('Démarrage vérification', `Tentative #${checkCount}`);
+            
+            let result = null;
+            const methods = [
+                { func: checkWithRSS, name: 'RSS', priority: 1 },
+                { func: checkWithLivePage, name: 'Live Page', priority: 2 }
+            ];
+            
+            // Essayer chaque méthode
+            for (const method of methods) {
+                updateDebugInfo(`Test ${method.name}`, `Proxy ${currentProxyIndex + 1}`);
+                
+                result = await method.func();
+                
+                if (result !== null) {
+                    updateDebugInfo(`${method.name} OK`, `Résultat: ${result.isLive ? 'LIVE' : 'No live'}`);
+                    break;
+                }
+                
+                // Si une méthode échoue, essayer le proxy suivant
+                currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            // Si toutes les méthodes ont échoué, réinitialiser les proxies et réessayer une fois
+            if (result === null) {
+                currentProxyIndex = 0;
+                updateDebugInfo('Retry avec proxy 1', 'Toutes méthodes failed');
+                result = await checkWithRSS();
+            }
+            
+            // Traiter le résultat
+            if (result === null) {
+                showError();
+            } else if (result.isLive) {
+                showLiveFound(result);
+            } else {
+                showWaiting();
             }
         }
         
         // Afficher l'état: diffusion trouvée
-        function showLiveFound() {
+        function showLiveFound(streamInfo) {
             setState(states.LIVE_FOUND);
+            lastStreamInfo = streamInfo;
+            
+            document.getElementById('stream-title').textContent = streamInfo.title || 'Diffusion en direct';
+            document.getElementById('detection-method').textContent = streamInfo.method || 'Détection automatique';
+            
+            // Calculer la durée si possible
+            if (streamInfo.publishedAt) {
+                const started = new Date(streamInfo.publishedAt);
+                const now = new Date();
+                const minutes = Math.floor((now - started) / (1000 * 60));
+                
+                if (minutes > 0) {
+                    document.getElementById('stream-duration').textContent = 
+                        `Démarré il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
+                } else {
+                    document.getElementById('stream-duration').textContent = 'Démarré il y a quelques instants';
+                }
+            }
+            
+            // Mettre à jour le lien
+            const directLink = document.getElementById('direct-link');
+            directLink.href = streamInfo.url || `https://youtube.com/channel/${CHANNEL_ID}/live`;
             
             // Démarrer le compte à rebours
+            startCountdown();
+            
+            updateDebugInfo('LIVE trouvé!', `Via ${streamInfo.method}`);
+        }
+        
+        // Afficher l'état: en attente
+        function showWaiting() {
+            setState(states.WAITING);
+            startRefreshTimer(CHECK_INTERVAL, 'refresh-timer');
+            updateDebugInfo('Pas de live', 'Attente 15s');
+        }
+        
+        // Afficher l'état: erreur
+        function showError() {
+            setState(states.ERROR);
+            startRefreshTimer(CHECK_INTERVAL, 'error-timer');
+            updateDebugInfo('Erreur connexion', 'Retry dans 15s');
+        }
+        
+        // Démarrer le compte à rebours
+        function startCountdown() {
             let timeLeft = 3;
             const timerElement = document.getElementById('timer');
             
@@ -346,28 +785,22 @@
                 
                 if (timeLeft <= 0) {
                     clearInterval(countdownTimer);
-                    // Rediriger vers la page de diffusion
-                    window.location.href = `https://youtube.com/channel/${CHANNEL_ID}/live`;
+                    const link = lastStreamInfo?.url || `https://youtube.com/channel/${CHANNEL_ID}/live`;
+                    window.location.href = link;
                 }
             }, 1000);
         }
         
-        // Afficher l'état: en attente
-        function showWaiting() {
-            setState(states.WAITING);
-            
-            // Démarrer le timer de rafraîchissement automatique
-            startRefreshTimer();
-        }
-        
         // Démarrer le timer de rafraîchissement
-        function startRefreshTimer() {
-            let timeLeft = 30;
-            const refreshTimerElement = document.getElementById('refresh-timer');
+        function startRefreshTimer(seconds, elementId) {
+            let timeLeft = seconds;
+            const timerElement = document.getElementById(elementId);
             
             refreshTimer = setInterval(() => {
                 timeLeft--;
-                refreshTimerElement.textContent = timeLeft;
+                if (timerElement) {
+                    timerElement.textContent = timeLeft;
+                }
                 
                 if (timeLeft <= 0) {
                     clearInterval(refreshTimer);
@@ -376,52 +809,58 @@
             }, 1000);
         }
         
-        // Fonction pour vérifier à nouveau manuellement
-        function checkAgain() {
+        // Nettoyer tous les timers
+        function clearAllTimers() {
             if (refreshTimer) {
                 clearInterval(refreshTimer);
+                refreshTimer = null;
             }
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+        }
+        
+        // Fonction pour vérifier à nouveau manuellement
+        function checkAgain() {
+            clearAllTimers();
             checkForLiveStream();
         }
         
-        // Version avec API YouTube (optionnelle)
-        async function checkWithAPI() {
-            if (!API_KEY) return false;
+        // Boucle principale
+        function startMainLoop() {
+            checkForLiveStream();
             
-            try {
-                const response = await fetch(
-                    `https://www.googleapis.com/youtube/v3/search?` +
-                    `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&key=${API_KEY}`
-                );
-                
-                const data = await response.json();
-                
-                if (data.items && data.items.length > 0) {
-                    // Diffusion trouvée, mettre à jour le lien direct
-                    const videoId = data.items[0].id.videoId;
-                    const directLink = document.getElementById('direct-link');
-                    if (directLink) {
-                        directLink.href = `https://youtube.com/watch?v=${videoId}`;
-                    }
-                    return true;
+            mainCheckInterval = setInterval(() => {
+                if (currentState !== states.LIVE_FOUND) {
+                    checkForLiveStream();
                 }
-                
-                return false;
-            } catch (error) {
-                console.error('Erreur API:', error);
-                return false;
-            }
+            }, CHECK_INTERVAL * 1000);
         }
         
-        // Démarrer la vérification au chargement de la page
+        // Initialisation
         window.addEventListener('load', () => {
-            checkForLiveStream();
+            updateDebugInfo('Initialisation', 'Démarrage système');
+            console.log('🔴 Stream Checker démarré - Mode sans API');
+            console.log('📡 Méthodes: RSS Feed + Live Page');
+            console.log('⏱️ Intervalle: 15 secondes');
+            
+            startMainLoop();
         });
         
-        // Nettoyer les timers quand on quitte la page
+        // Nettoyage
         window.addEventListener('beforeunload', () => {
-            if (refreshTimer) clearInterval(refreshTimer);
-            if (countdownTimer) clearInterval(countdownTimer);
+            clearAllTimers();
+            if (mainCheckInterval) {
+                clearInterval(mainCheckInterval);
+            }
+        });
+        
+        // Reprendre quand la page redevient visible
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && currentState !== states.LIVE_FOUND) {
+                checkAgain();
+            }
         });
     </script>
 </body>
