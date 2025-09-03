@@ -3,7 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔴 Diffusion en direct</title>
+    <title>🔴 Vérification des diffusions</title>
+    
+    <!-- Open Graph meta tags pour les réseaux sociaux -->
+    <meta property="og:title" content="Vérification des diffusions YouTube">
+    <meta property="og:description" content="Vérification des diffusions en direct sur la chaîne YouTube">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://img.youtube.com/vi/default/maxresdefault.jpg">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Vérification des diffusions YouTube">
+    <meta name="twitter:description" content="Vérification des diffusions en direct">
+    
+    <!-- Interdire l'indexation par les bots -->
+    <meta name="robots" content="noindex, nofollow">
     
     <style>
         * {
@@ -37,34 +51,30 @@
             transition: all 0.5s ease;
         }
         
-        /* État: recherche en cours */
-        body.searching {
+        /* États du fond */
+        body.initial {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
-        /* État: diffusion en direct trouvée */
+        body.checking {
+            background: linear-gradient(135deg, #4A90E2 0%, #7B68EE 100%);
+        }
+        
         body.live-found {
             background: linear-gradient(135deg, #ff0000, #cc0000);
         }
         
-        /* État: pas de diffusion */
-        body.waiting {
+        body.no-live {
             background: linear-gradient(135deg, #ffa726, #ff7043);
         }
         
-        /* État: erreur API */
         body.error {
             background: linear-gradient(135deg, #f44336, #d32f2f);
         }
         
-        /* État: configuration requise */
-        body.config-needed {
-            background: linear-gradient(135deg, #9c27b0, #673ab7);
-        }
-        
-        .live-indicator {
-            font-size: 60px;
-            margin-bottom: 20px;
+        .icon {
+            font-size: 80px;
+            margin-bottom: 30px;
         }
         
         .pulse {
@@ -75,34 +85,15 @@
             animation: rotate 1s linear infinite;
         }
         
-        .blink {
-            animation: blink 1.5s infinite;
-        }
-        
-        .shake {
-            animation: shake 0.5s ease-in-out infinite;
-        }
-        
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.15); }
+            50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
         
         @keyframes rotate {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.2; }
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-3px); }
-            75% { transform: translateX(3px); }
         }
         
         h1 {
@@ -112,15 +103,77 @@
         }
         
         .subtitle {
-            font-size: 1.3em;
+            font-size: 1.2em;
             margin-bottom: 30px;
             opacity: 0.9;
-            line-height: 1.4;
+            line-height: 1.5;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 18px 40px;
+            margin: 10px;
+            background: white;
+            color: #333;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Animation cooldown */
+        .btn-cooldown::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            transform-origin: left;
+            animation: cooldownFill 15s linear forwards;
+        }
+        
+        @keyframes cooldownFill {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(0); }
+        }
+        
+        .cooldown-text {
+            position: relative;
+            z-index: 1;
         }
         
         .stream-info {
             background: rgba(255, 255, 255, 0.15);
-            padding: 20px;
+            padding: 25px;
             border-radius: 15px;
             margin: 25px 0;
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -128,73 +181,18 @@
         }
         
         .stream-title {
-            font-size: 1.2em;
-            margin-bottom: 10px;
+            font-size: 1.3em;
+            margin-bottom: 15px;
             font-weight: bold;
         }
         
         .stream-meta {
-            font-size: 0.9em;
-            opacity: 0.8;
-        }
-        
-        .countdown {
-            font-size: 1.5em;
-            margin: 30px 0;
-            font-weight: bold;
-        }
-        
-        .countdown span {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 15px;
-            border-radius: 10px;
-            margin: 0 5px;
-            font-size: 1.8em;
-            min-width: 55px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .buttons {
-            margin-top: 30px;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 15px 30px;
-            margin: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 1.1em;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            cursor: pointer;
-        }
-        
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-        }
-        
-        .btn-primary {
-            background: #ffffff;
-            color: #333;
-            font-weight: bold;
-        }
-        
-        .btn-primary:hover {
-            background: #f0f0f0;
-            color: #000;
-        }
-        
-        .refresh-timer {
-            margin-top: 30px;
             font-size: 1em;
-            opacity: 0.8;
+            opacity: 0.9;
+        }
+        
+        .stream-meta > div {
+            margin: 8px 0;
         }
         
         .info-box {
@@ -209,63 +207,53 @@
         .info-box h4 {
             margin-bottom: 15px;
             text-align: center;
+            font-size: 1.2em;
         }
         
-        .config-box {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 25px;
-            border-radius: 15px;
-            margin: 25px 0;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+        .info-box p {
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+        
+        .stats {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
             text-align: left;
         }
         
-        .config-step {
-            margin: 15px 0;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .config-step:last-child {
-            border-bottom: none;
+        .stats div {
+            margin: 5px 0;
         }
         
         .loading-spinner {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            border-top: 2px solid white;
+            border-top-color: white;
             animation: spin 1s linear infinite;
             margin-right: 10px;
+            vertical-align: middle;
         }
         
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
         
-        .status-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-            z-index: 1000;
-            border-bottom: 1px solid #333;
-        }
-        
-        .api-status {
-            color: #00ff00;
-        }
-        
-        .api-status.error {
-            color: #ff4444;
+        .error-details {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            text-align: left;
         }
         
         .hidden { display: none !important; }
@@ -280,519 +268,521 @@
                 font-size: 2em;
             }
             
-            .countdown span {
-                font-size: 1.4em;
-                padding: 8px 12px;
-                min-width: 45px;
+            .subtitle {
+                font-size: 1.1em;
             }
             
             .btn {
-                padding: 12px 20px;
-                font-size: 1em;
-                margin: 8px;
+                padding: 15px 30px;
+                font-size: 1.1em;
             }
             
-            .status-bar {
-                font-size: 12px;
-                padding: 8px 15px;
-            }
-            
-            .stream-info, .config-box, .info-box {
-                padding: 20px 15px;
+            .stats {
+                bottom: 10px;
+                right: 10px;
+                font-size: 0.8em;
+                padding: 10px 15px;
             }
         }
     </style>
 </head>
-<body class="config-needed">
-    <!-- Status Bar -->
-    <div class="status-bar" id="status-bar">
-        <span id="api-status" class="api-status">🔧 Configuration requise</span> | 
-        Vérifications: <span id="check-count">0</span> | 
-        Dernière: <span id="last-check">Jamais</span>
-    </div>
-    
+<body class="initial">
     <div class="container">
-        <!-- État: Configuration requise -->
-        <div id="config-needed-state">
-            <div class="live-indicator">🔧</div>
-            <h1>Configuration requise</h1>
+        <!-- État initial -->
+        <div id="initial-state">
+            <div class="icon">📺</div>
+            <h1>Vérification des diffusions</h1>
             <p class="subtitle">
-                Une clé API YouTube est nécessaire pour un fonctionnement optimal
+                Appuyez sur le bouton pour vérifier les diffusions en direct sur la chaîne YouTube
             </p>
             
-            <div class="config-box">
-                <h4>📋 Comment configurer :</h4>
-                <div class="config-step">
-                    <strong>1.</strong> Aller sur <a href="https://console.cloud.google.com" target="_blank" style="color: #4fc3f7;">Google Cloud Console</a>
-                </div>
-                <div class="config-step">
-                    <strong>2.</strong> Créer un nouveau projet ou sélectionner existant
-                </div>
-                <div class="config-step">
-                    <strong>3.</strong> Activer "YouTube Data API v3" dans la bibliothèque
-                </div>
-                <div class="config-step">
-                    <strong>4.</strong> Créer une clé API dans "Identifiants"
-                </div>
-                <div class="config-step">
-                    <strong>5.</strong> Copier la clé et la coller dans le code (ligne 35)
-                </div>
-            </div>
+            <button class="btn" id="check-btn" onclick="checkStream()">
+                <span class="cooldown-text">🔍 Vérifier la diffusion</span>
+            </button>
             
-            <div class="buttons">
-                <button class="btn btn-primary" onclick="testWithoutAPI()">
-                    🚀 Tester quand même
-                </button>
-                
-                <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" class="btn">
-                    🔑 Obtenir la clé API
-                </a>
-            </div>
+            <button class="btn btn-secondary" onclick="openChannel()">
+                📺 Ouvrir la chaîne
+            </button>
             
             <div class="info-box">
-                <h4>💡 Pourquoi une clé API ?</h4>
-                <p>• <strong>Rapidité :</strong> Détection instantanée des diffusions</p>
-                <p>• <strong>Précision :</strong> 99% de fiabilité vs 70% sans API</p>
-                <p>• <strong>Informations :</strong> Titre, durée, spectateurs</p>
-                <p>• <strong>Gratuit :</strong> 10,000 requêtes/jour gratuites</p>
+                <h4>💡 Comment ça marche</h4>
+                <p>• Cliquez sur le bouton pour vérifier la diffusion</p>
+                <p>• Après vérification - attente de 15 secondes</p>
+                <p>• Si diffusion détectée - redirection automatique</p>
             </div>
         </div>
         
-        <!-- État: recherche en cours -->
-        <div id="searching-state" class="hidden">
-            <div class="live-indicator rotate">🔍</div>
-            <h1>Recherche en cours</h1>
+        <!-- État de vérification -->
+        <div id="checking-state" class="hidden">
+            <div class="icon rotate">🔍</div>
+            <h1>Vérification...</h1>
             <p class="subtitle">
                 <span class="loading-spinner"></span>
-                Vérification des diffusions en direct via YouTube API
+                Connexion à l'API YouTube
             </p>
-            <div class="info-box" style="text-align: center;">
-                <p>Connexion à l'API YouTube...</p>
-            </div>
         </div>
         
-        <!-- État: diffusion trouvée -->
+        <!-- Diffusion trouvée -->
         <div id="live-found-state" class="hidden">
-            <div class="live-indicator pulse">🔴</div>
+            <div class="icon pulse">🔴</div>
             <h1>Diffusion en direct !</h1>
             
             <div class="stream-info">
-                <div class="stream-title" id="stream-title">Titre de la diffusion</div>
+                <div class="stream-title" id="stream-title">Chargement...</div>
                 <div class="stream-meta">
-                    <div>👥 <span id="viewer-count">— spectateurs</span></div>
-                    <div>⏱️ <span id="stream-duration">Démarré récemment</span></div>
+                    <div>👥 <span id="viewer-count">—</span></div>
+                    <div>⏱️ <span id="stream-duration">—</span></div>
+                    <div>🔗 <span id="stream-id">—</span></div>
                 </div>
             </div>
             
-            <div class="countdown">
-                Redirection dans <span id="timer">3</span> secondes
-            </div>
+            <a href="#" class="btn" id="watch-btn">
+                ▶️ Regarder la diffusion
+            </a>
             
-            <div class="buttons">
-                <a href="#" class="btn btn-primary" id="direct-link">
-                    🎬 Regarder maintenant
-                </a>
+            <button class="btn btn-secondary" onclick="checkAgain()">
+                🔄 Vérifier à nouveau
+            </button>
+            
+            <div class="subtitle" style="margin-top: 20px; font-size: 1em;">
+                Redirection automatique dans <span id="redirect-timer">5</span> secondes
             </div>
         </div>
         
-        <!-- État: pas de diffusion -->
-        <div id="waiting-state" class="hidden">
-            <div class="live-indicator blink">⏳</div>
-            <h1>Aucune diffusion en cours</h1>
+        <!-- Pas de diffusion -->
+        <div id="no-live-state" class="hidden">
+            <div class="icon">😴</div>
+            <h1>Aucune diffusion</h1>
             <p class="subtitle">
-                La diffusion reprendra prochainement.<br>
-                Vérification automatique en cours...
+                Aucune diffusion en direct n'est actuellement disponible
             </p>
             
-            <div class="info-box">
-                <h4>📺 Que faire en attendant ?</h4>
-                <p>• Activez les notifications sur la chaîne YouTube</p>
-                <p>• Suivez les annonces sur les réseaux sociaux</p>
-                <p>• Consultez les diffusions précédentes</p>
-                <p>• Cette page se met à jour automatiquement</p>
-            </div>
+            <button class="btn" id="check-again-btn" onclick="checkStream()">
+                <span class="cooldown-text">🔄 Vérifier à nouveau</span>
+            </button>
             
-            <div class="buttons">
-                <button class="btn btn-primary" onclick="checkNow()">
-                    🔄 Vérifier maintenant
-                </button>
-                
-                <a href="https://youtube.com/channel/UC6u5Kliw-Ll-xipj-bKmxDQ" class="btn">
-                    📺 Visiter la chaîne
-                </a>
-            </div>
+            <button class="btn btn-secondary" onclick="openChannel()">
+                📺 Aller sur la chaîne
+            </button>
             
-            <div class="refresh-timer">
-                Prochaine vérification dans <span id="refresh-timer">20</span> secondes
+            <div id="last-check-info" class="subtitle" style="margin-top: 20px; font-size: 0.9em;">
+                Dernière vérification : <span id="last-check-time">—</span>
             </div>
         </div>
         
-        <!-- État: erreur API -->
+        <!-- Erreur -->
         <div id="error-state" class="hidden">
-            <div class="live-indicator shake">❌</div>
-            <h1>Erreur API</h1>
+            <div class="icon">⚠️</div>
+            <h1>Erreur</h1>
             <p class="subtitle" id="error-message">
-                Problème avec la clé API YouTube
+                Impossible de vérifier la diffusion
             </p>
             
-            <div class="info-box">
-                <h4>🔧 Solutions possibles :</h4>
-                <p><strong>Clé API invalide :</strong> Vérifiez que la clé est correcte</p>
-                <p><strong>Quota dépassé :</strong> Limite de 10,000 requêtes/jour atteinte</p>
-                <p><strong>API désactivée :</strong> Activez YouTube Data API v3</p>
-                <p><strong>Restrictions :</strong> Vérifiez les restrictions de domaine</p>
-            </div>
+            <div class="error-details" id="error-details"></div>
             
-            <div class="buttons">
-                <button class="btn btn-primary" onclick="checkNow()">
-                    🔄 Réessayer
-                </button>
-                
-                <a href="https://console.cloud.google.com/apis/api/youtube.googleapis.com" target="_blank" class="btn">
-                    ⚙️ Google Console
-                </a>
-            </div>
+            <button class="btn" onclick="checkStream()">
+                🔄 Réessayer
+            </button>
             
-            <div class="refresh-timer">
-                Nouvelle tentative dans <span id="error-timer">20</span> secondes
-            </div>
+            <button class="btn btn-secondary" onclick="openChannel()">
+                📺 Ouvrir la chaîne directement
+            </button>
         </div>
     </div>
     
+    <!-- Statistiques -->
+    <div class="stats">
+        <div>📊 Vérifications aujourd'hui : <span id="checks-today">0</span></div>
+        <div>⏱️ Avant vérification : <span id="cooldown-timer">prêt</span></div>
+    </div>
+    
     <script>
-        // ⚠️ CONFIGURATION : Insérez votre clé API YouTube ici ⚠️
-        const YOUTUBE_API_KEY = 'AIzaSyB-RKtWqclVLo3ueilq61Wdg08B4O6qLUI'; // 
-        
         // Configuration
+        const YOUTUBE_API_KEY = 'AIzaSyB-RKtWqclVLo3ueilq61Wdg08B4O6qLUI';
         const CHANNEL_ID = 'UC6u5Kliw-Ll-xipj-bKmxDQ';
-        const CHECK_INTERVAL = 20; // Vérification toutes les 20 secondes
-        const REDIRECT_DELAY = 3;   // Délai avant redirection
+        const COOLDOWN_TIME = 15000; // 15 secondes
+        const REDIRECT_DELAY = 5; // 5 secondes avant redirection auto
         
-        // États de l'application
-        const states = {
-            CONFIG_NEEDED: 'config-needed',
-            SEARCHING: 'searching',
-            LIVE_FOUND: 'live-found',
-            WAITING: 'waiting',
-            ERROR: 'error'
-        };
+        // États
+        let isChecking = false;
+        let cooldownEndTime = 0;
+        let redirectTimer = null;
+        let cooldownInterval = null;
         
-        // Variables globales
-        let currentState = states.CONFIG_NEEDED;
-        let checkInterval = null;
-        let countdownTimer = null;
-        let refreshTimer = null;
-        let checkCount = 0;
-        let lastStreamData = null;
+        // Statistiques
+        const STATS_KEY = 'stream_stats';
         
-        // Mise à jour de la barre de statut
-        function updateStatusBar(status, isError = false) {
-            const apiStatus = document.getElementById('api-status');
-            const checkCountEl = document.getElementById('check-count');
-            const lastCheckEl = document.getElementById('last-check');
-            
-            apiStatus.textContent = status;
-            apiStatus.className = isError ? 'api-status error' : 'api-status';
-            checkCountEl.textContent = checkCount;
-            lastCheckEl.textContent = new Date().toLocaleTimeString();
+        function getStats() {
+            try {
+                const stats = localStorage.getItem(STATS_KEY);
+                if (!stats) return { daily: 0, lastReset: new Date().toDateString() };
+                
+                const data = JSON.parse(stats);
+                // Réinitialisation quotidienne
+                if (data.lastReset !== new Date().toDateString()) {
+                    return { daily: 0, lastReset: new Date().toDateString() };
+                }
+                return data;
+            } catch (e) {
+                return { daily: 0, lastReset: new Date().toDateString() };
+            }
         }
         
-        // Changer d'état
-        function setState(newState) {
-            // Cacher tous les états
+        function incrementStats() {
+            const stats = getStats();
+            stats.daily++;
+            localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+            return stats.daily;
+        }
+        
+        // Protection contre les bots des réseaux sociaux
+        function isBotTraffic() {
+            const ua = navigator.userAgent.toLowerCase();
+            const botPatterns = [
+                'facebookexternalhit',  // Facebook
+                'facebookcatalog',       // Facebook
+                'whatsapp',              // WhatsApp
+                'telegram',              // Telegram
+                'twitterbot',            // Twitter
+                'linkedinbot',           // LinkedIn
+                'slackbot',              // Slack
+                'discordbot',            // Discord
+                'vkshare',               // VKontakte
+                'yandex',                // Yandex
+                'google',                // Google
+                'bot', 'crawler', 'spider', 'scraper'
+            ];
+            
+            // Vérification User Agent
+            const isBot = botPatterns.some(pattern => ua.includes(pattern));
+            
+            // Vérifications supplémentaires
+            if (isBot) return true;
+            
+            // Vérification Headless Chrome
+            if (navigator.webdriver) return true;
+            
+            return false;
+        }
+        
+        // Fonctions UI
+        function setState(stateName) {
+            // Masquer tous les états
             document.querySelectorAll('[id$="-state"]').forEach(el => {
                 el.classList.add('hidden');
             });
             
-            // Afficher le nouvel état
-            document.getElementById(newState + '-state').classList.remove('hidden');
-            document.body.className = newState;
-            
-            currentState = newState;
-        }
-        
-        // Vérifier la configuration
-        function checkConfiguration() {
-            if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY.trim() === '') {
-                console.warn('⚠️ Clé API YouTube non configurée');
-                updateStatusBar('🔧 Clé API manquante', true);
-                setState(states.CONFIG_NEEDED);
-                return false;
+            // Afficher l'état souhaité
+            const stateEl = document.getElementById(stateName + '-state');
+            if (stateEl) {
+                stateEl.classList.remove('hidden');
             }
             
-            if (YOUTUBE_API_KEY.length < 30) {
-                console.warn('⚠️ Clé API semble invalide (trop courte)');
-                updateStatusBar('🔧 Clé API invalide', true);
-                setState(states.CONFIG_NEEDED);
-                return false;
-            }
-            
-            return true;
+            // Changer la classe du body pour le fond
+            document.body.className = stateName.replace('_', '-');
         }
         
-        // Appel API YouTube pour rechercher des diffusions live
-        async function searchLiveStreams() {
-            const url = 'https://www.googleapis.com/youtube/v3/search';
-            const params = new URLSearchParams({
-                part: 'snippet',
-                channelId: CHANNEL_ID,
-                type: 'video',
-                eventType: 'live',
-                key: YOUTUBE_API_KEY,
-                maxResults: '1'
-            });
+        // Fonction de vérification de diffusion
+        async function checkStream() {
+            if (isChecking) return;
             
-            const response = await fetch(`${url}?${params}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API Error:', response.status, errorText);
-                
-                if (response.status === 403) {
-                    throw new Error('Clé API invalide ou quota dépassé');
-                } else if (response.status === 400) {
-                    throw new Error('Requête invalide - vérifiez la configuration');
-                } else {
-                    throw new Error(`Erreur API: ${response.status}`);
-                }
-            }
-            
-            return await response.json();
-        }
-        
-        // Obtenir les détails d'une vidéo (statistiques live)
-        async function getVideoDetails(videoId) {
-            const url = 'https://www.googleapis.com/youtube/v3/videos';
-            const params = new URLSearchParams({
-                part: 'liveStreamingDetails,statistics,snippet',
-                id: videoId,
-                key: YOUTUBE_API_KEY
-            });
-            
-            const response = await fetch(`${url}?${params}`);
-            
-            if (!response.ok) {
-                console.warn('Impossible de récupérer les détails de la vidéo');
-                return null;
-            }
-            
-            const data = await response.json();
-            return data.items && data.items.length > 0 ? data.items[0] : null;
-        }
-        
-        // Vérification principale des diffusions
-        async function checkForLiveStreams() {
-            if (!checkConfiguration()) {
+            // Vérification cooldown
+            if (Date.now() < cooldownEndTime) {
+                const secondsLeft = Math.ceil((cooldownEndTime - Date.now()) / 1000);
+                alert(`Attendez ${secondsLeft} secondes avant la prochaine vérification`);
                 return;
             }
             
-            setState(states.SEARCHING);
-            clearAllTimers();
-            checkCount++;
-            
-            updateStatusBar('🔍 Vérification en cours...');
+            // Nouvelle requête API
+            isChecking = true;
+            setState('checking');
+            clearTimers();
             
             try {
-                console.log(`[${new Date().toLocaleTimeString()}] Vérification #${checkCount}`);
+                // Recherche des diffusions
+                const searchUrl = 'https://www.googleapis.com/youtube/v3/search';
+                const searchParams = new URLSearchParams({
+                    part: 'snippet',
+                    channelId: CHANNEL_ID,
+                    type: 'video',
+                    eventType: 'live',
+                    key: YOUTUBE_API_KEY,
+                    maxResults: '1'
+                });
                 
-                // Rechercher les diffusions live
-                const searchData = await searchLiveStreams();
+                const response = await fetch(`${searchUrl}?${searchParams}`);
                 
-                if (searchData.items && searchData.items.length > 0) {
-                    const liveStream = searchData.items[0];
-                    const videoId = liveStream.id.videoId;
-                    
-                    console.log('✅ Diffusion trouvée:', liveStream.snippet.title);
-                    
-                    // Obtenir les détails supplémentaires
-                    const videoDetails = await getVideoDetails(videoId);
-                    
+                if (!response.ok) {
+                    throw new Error(`Erreur API: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Incrémenter le compteur
+                const dailyCount = incrementStats();
+                document.getElementById('checks-today').textContent = dailyCount;
+                
+                if (data.items && data.items.length > 0) {
+                    const stream = data.items[0];
                     const streamData = {
-                        videoId: videoId,
-                        title: liveStream.snippet.title,
-                        publishedAt: liveStream.snippet.publishedAt,
-                        url: `https://youtube.com/watch?v=${videoId}`,
-                        thumbnail: liveStream.snippet.thumbnails.medium?.url,
-                        viewerCount: videoDetails?.liveStreamingDetails?.concurrentViewers || null,
-                        actualStartTime: videoDetails?.liveStreamingDetails?.actualStartTime
+                        videoId: stream.id.videoId,
+                        title: stream.snippet.title,
+                        url: `https://youtube.com/watch?v=${stream.id.videoId}`,
+                        publishedAt: stream.snippet.publishedAt
                     };
                     
-                    showLiveStream(streamData);
+                    // Obtenir les détails de la vidéo
+                    try {
+                        const detailsUrl = 'https://www.googleapis.com/youtube/v3/videos';
+                        const detailsParams = new URLSearchParams({
+                            part: 'liveStreamingDetails,statistics',
+                            id: streamData.videoId,
+                            key: YOUTUBE_API_KEY
+                        });
+                        
+                        const detailsResponse = await fetch(`${detailsUrl}?${detailsParams}`);
+                        if (detailsResponse.ok) {
+                            const details = await detailsResponse.json();
+                            if (details.items && details.items.length > 0) {
+                                streamData.viewers = details.items[0].liveStreamingDetails?.concurrentViewers;
+                                streamData.startTime = details.items[0].liveStreamingDetails?.actualStartTime;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Impossible d\'obtenir les détails:', e);
+                    }
                     
+                    showLiveStream(streamData);
                 } else {
-                    console.log('❌ Aucune diffusion en cours');
-                    showWaitingState();
+                    showNoLive();
                 }
                 
-                updateStatusBar('✅ API connectée');
+                updateStats();
+                startCooldown();
                 
             } catch (error) {
-                console.error('Erreur lors de la vérification:', error);
-                showErrorState(error.message);
-                updateStatusBar(`❌ ${error.message}`, true);
+                console.error('Erreur:', error);
+                showError(error.message);
+            } finally {
+                isChecking = false;
             }
         }
         
-        // Afficher l'état : diffusion trouvée
+        // Afficher la diffusion
         function showLiveStream(streamData) {
-            setState(states.LIVE_FOUND);
-            lastStreamData = streamData;
+            setState('live-found');
             
-            // Mettre à jour les informations
-            document.getElementById('stream-title').textContent = streamData.title;
-            document.getElementById('direct-link').href = streamData.url;
+            document.getElementById('stream-title').textContent = streamData.title || 'Diffusion';
+            document.getElementById('stream-id').textContent = streamData.videoId;
             
             // Nombre de spectateurs
-            const viewerEl = document.getElementById('viewer-count');
-            if (streamData.viewerCount) {
-                const viewers = parseInt(streamData.viewerCount);
-                viewerEl.textContent = `${viewers.toLocaleString()} spectateurs`;
-            } else {
-                viewerEl.textContent = 'En direct';
-            }
+            const viewerCount = streamData.viewers 
+                ? `${parseInt(streamData.viewers).toLocaleString('fr-FR')} spectateurs`
+                : 'En direct';
+            document.getElementById('viewer-count').textContent = viewerCount;
             
-            // Durée de la diffusion
-            const durationEl = document.getElementById('stream-duration');
-            if (streamData.actualStartTime) {
-                const startTime = new Date(streamData.actualStartTime);
+            // Durée
+            if (streamData.startTime) {
+                const start = new Date(streamData.startTime);
                 const now = new Date();
-                const duration = Math.floor((now - startTime) / (1000 * 60));
+                const minutes = Math.floor((now - start) / 60000);
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
                 
-                if (duration > 0) {
-                    durationEl.textContent = `En direct depuis ${duration} minute${duration > 1 ? 's' : ''}`;
+                let duration = '';
+                if (hours > 0) {
+                    duration = `${hours} h ${mins} min`;
                 } else {
-                    durationEl.textContent = 'Démarré à l\'instant';
+                    duration = `${mins} min`;
                 }
+                document.getElementById('stream-duration').textContent = `En direct depuis ${duration}`;
             } else {
-                durationEl.textContent = 'Démarré récemment';
+                document.getElementById('stream-duration').textContent = 'Début de la diffusion';
             }
             
-            // Démarrer le compte à rebours
-            startCountdown();
-        }
-        
-        // Afficher l'état : en attente
-        function showWaitingState() {
-            setState(states.WAITING);
-            startRefreshTimer('refresh-timer');
-        }
-        
-        // Afficher l'état : erreur
-        function showErrorState(errorMessage) {
-            setState(states.ERROR);
-            document.getElementById('error-message').textContent = errorMessage;
-            startRefreshTimer('error-timer');
-        }
-        
-        // Compte à rebours avant redirection
-        function startCountdown() {
-            let timeLeft = REDIRECT_DELAY;
-            const timerEl = document.getElementById('timer');
+            // Lien
+            document.getElementById('watch-btn').href = streamData.url;
             
-            countdownTimer = setInterval(() => {
-                timeLeft--;
-                timerEl.textContent = timeLeft;
+            // Redirection automatique
+            startRedirectCountdown(streamData.url);
+        }
+        
+        // Afficher absence de diffusion
+        function showNoLive() {
+            setState('no-live');
+            document.getElementById('last-check-time').textContent = 
+                new Date().toLocaleTimeString('fr-FR');
+        }
+        
+        // Afficher erreur
+        function showError(message) {
+            setState('error');
+            document.getElementById('error-message').textContent = 
+                'Une erreur s\'est produite lors de la vérification';
+            
+            const details = document.getElementById('error-details');
+            if (message.includes('403')) {
+                details.innerHTML = `
+                    <strong>Causes possibles :</strong><br>
+                    • Limite de requêtes API dépassée<br>
+                    • Clé API invalide<br>
+                    • Clé API non activée pour YouTube Data API
+                `;
+            } else {
+                details.textContent = `Information technique : ${message}`;
+            }
+        }
+        
+        // Cooldown du bouton
+        function startCooldown() {
+            cooldownEndTime = Date.now() + COOLDOWN_TIME;
+            
+            // Désactiver les boutons
+            const buttons = document.querySelectorAll('#check-btn, #check-again-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('btn-cooldown');
+            });
+            
+            // Mettre à jour le timer
+            cooldownInterval = setInterval(() => {
+                const remaining = cooldownEndTime - Date.now();
                 
-                if (timeLeft <= 0) {
-                    clearInterval(countdownTimer);
-                    window.location.href = lastStreamData.url;
+                if (remaining <= 0) {
+                    clearInterval(cooldownInterval);
+                    
+                    // Réactiver les boutons
+                    buttons.forEach(btn => {
+                        btn.disabled = false;
+                        btn.classList.remove('btn-cooldown');
+                        const textEl = btn.querySelector('.cooldown-text');
+                        if (textEl) {
+                            textEl.textContent = btn.id === 'check-btn' 
+                                ? '🔍 Vérifier la diffusion' 
+                                : '🔄 Vérifier à nouveau';
+                        }
+                    });
+                    
+                    document.getElementById('cooldown-timer').textContent = 'prêt';
+                } else {
+                    const seconds = Math.ceil(remaining / 1000);
+                    document.getElementById('cooldown-timer').textContent = `${seconds} sec`;
+                    
+                    // Mettre à jour le texte des boutons
+                    buttons.forEach(btn => {
+                        const textEl = btn.querySelector('.cooldown-text');
+                        if (textEl) {
+                            textEl.textContent = `⏳ Attendez ${seconds} sec`;
+                        }
+                    });
+                }
+            }, 100);
+        }
+        
+        // Redirection automatique vers la diffusion
+        function startRedirectCountdown(url) {
+            let seconds = REDIRECT_DELAY;
+            const timerEl = document.getElementById('redirect-timer');
+            
+            redirectTimer = setInterval(() => {
+                seconds--;
+                timerEl.textContent = seconds;
+                
+                if (seconds <= 0) {
+                    clearInterval(redirectTimer);
+                    window.location.href = url;
                 }
             }, 1000);
         }
         
-        // Timer de rafraîchissement
-        function startRefreshTimer(elementId) {
-            let timeLeft = CHECK_INTERVAL;
-            const timerEl = document.getElementById(elementId);
-            
-            refreshTimer = setInterval(() => {
-                timeLeft--;
-                if (timerEl) {
-                    timerEl.textContent = timeLeft;
-                }
-                
-                if (timeLeft <= 0) {
-                    clearInterval(refreshTimer);
-                    checkForLiveStreams();
-                }
-            }, 1000);
+        // Vérifier à nouveau (depuis l'état live-found)
+        function checkAgain() {
+            clearTimers();
+            setState('initial');
+            checkStream();
         }
         
-        // Nettoyer tous les timers
-        function clearAllTimers() {
-            if (countdownTimer) {
-                clearInterval(countdownTimer);
-                countdownTimer = null;
-            }
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-                refreshTimer = null;
+        // Ouvrir la chaîne
+        function openChannel() {
+            window.open(`https://youtube.com/channel/${CHANNEL_ID}`, '_blank');
+        }
+        
+        // Nettoyage des timers
+        function clearTimers() {
+            if (redirectTimer) {
+                clearInterval(redirectTimer);
+                redirectTimer = null;
             }
         }
         
-        // Vérification manuelle
-        function checkNow() {
-            clearAllTimers();
-            checkForLiveStreams();
+        // Mise à jour des statistiques
+        function updateStats() {
+            const stats = getStats();
+            document.getElementById('checks-today').textContent = stats.daily;
         }
         
-        // Test sans API (mode dégradé)
-        function testWithoutAPI() {
-            console.warn('⚠️ Mode de test sans API - fonctionnalités limitées');
-            updateStatusBar('⚠️ Mode test - sans API', true);
-            
-            // Simulation pour test
-            setTimeout(() => {
-                showWaitingState();
-            }, 2000);
-        }
-        
-        // Boucle principale
-        function startMainLoop() {
-            if (!checkConfiguration()) {
-                return;
-            }
-            
-            // Première vérification
-            checkForLiveStreams();
-            
-            // Puis vérification périodique
-            checkInterval = setInterval(() => {
-                // Ne pas interrompre pendant une redirection
-                if (currentState !== states.LIVE_FOUND) {
-                    checkForLiveStreams();
-                }
-            }, CHECK_INTERVAL * 1000);
-        }
-        
-        // Initialisation
+        // Initialisation au chargement
         window.addEventListener('load', () => {
-            console.log('🚀 Stream Checker v2.0 - YouTube API uniquement');
-            console.log(`📺 Canal: ${CHANNEL_ID}`);
-            console.log(`⏰ Intervalle: ${CHECK_INTERVAL}s`);
-            console.log(`🔑 API Key: ${YOUTUBE_API_KEY ? 'Configurée' : 'NON CONFIGURÉE'}`);
+            // Bloquer les bots
+            if (isBotTraffic()) {
+                console.warn('🤖 Bot détecté - appels API désactivés');
+                console.warn('User Agent:', navigator.userAgent);
+                
+                // Logger la tentative du bot
+                try {
+                    const botStats = JSON.parse(localStorage.getItem('bot_attempts') || '[]');
+                    botStats.push({
+                        time: new Date().toISOString(),
+                        ua: navigator.userAgent.substring(0, 100)
+                    });
+                    // Garder seulement les 50 dernières entrées
+                    if (botStats.length > 50) botStats.shift();
+                    localStorage.setItem('bot_attempts', JSON.stringify(botStats));
+                } catch(e) {}
+                
+                document.body.innerHTML = `
+                    <div style="padding: 40px; text-align: center; font-family: Arial;">
+                        <h1>🔴 Vérification des diffusions</h1>
+                        <p>Chaîne YouTube : ${CHANNEL_ID}</p>
+                        <p>Pour vérifier les diffusions, ouvrez la page dans un navigateur</p>
+                    </div>
+                `;
+                return; // Arrêt complet du script pour les bots
+            }
             
-            updateStatusBar('🔧 Initialisation...');
-            startMainLoop();
-        });
-        
-        // Nettoyage à la fermeture
-        window.addEventListener('beforeunload', () => {
-            clearAllTimers();
-            if (checkInterval) {
-                clearInterval(checkInterval);
+            console.log('🚀 Stream Checker v3.0 - Mode Manuel');
+            console.log('📺 Chaîne:', CHANNEL_ID);
+            console.log('⏱️ Cooldown:', COOLDOWN_TIME / 1000, 'sec');
+            console.log('👤 User Agent:', navigator.userAgent);
+            
+            // Afficher les statistiques des bots si disponibles
+            const botAttempts = JSON.parse(localStorage.getItem('bot_attempts') || '[]');
+            if (botAttempts.length > 0) {
+                console.log(`🤖 Bots bloqués : ${botAttempts.length}`);
+            }
+            
+            setState('initial');
+            updateStats();
+            
+            // Vérifier s'il y a un cooldown sauvegardé
+            const savedCooldown = localStorage.getItem('last_check_time');
+            if (savedCooldown) {
+                const timePassed = Date.now() - parseInt(savedCooldown);
+                if (timePassed < COOLDOWN_TIME) {
+                    cooldownEndTime = parseInt(savedCooldown) + COOLDOWN_TIME;
+                    startCooldown();
+                }
             }
         });
         
-        // Reprendre les vérifications quand la page redevient visible
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && currentState !== states.LIVE_FOUND) {
-                checkNow();
+        // Sauvegarder le temps de vérification à la fermeture
+        window.addEventListener('beforeunload', () => {
+            if (cooldownEndTime > Date.now()) {
+                localStorage.setItem('last_check_time', cooldownEndTime - COOLDOWN_TIME);
+            }
+            clearTimers();
+            if (cooldownInterval) {
+                clearInterval(cooldownInterval);
             }
         });
     </script>
