@@ -3,21 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔴 Vérification des diffusions</title>
+    <title>🔴 Diffusion en direct</title>
     
-    <!-- Open Graph meta tags pour les réseaux sociaux -->
-    <meta property="og:title" content="Vérification des diffusions YouTube">
-    <meta property="og:description" content="Vérification des diffusions en direct sur la chaîne YouTube">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="https://img.youtube.com/vi/default/maxresdefault.jpg">
-    
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Vérification des diffusions YouTube">
-    <meta name="twitter:description" content="Vérification des diffusions en direct">
-    
-    <!-- Interdire l'indexation par les bots -->
-    <meta name="robots" content="noindex, nofollow">
+    <!-- Métabalises SEO -->
+    <meta name="description" content="Accès à la diffusion en direct de la chaîne YouTube">
+    <meta name="keywords" content="youtube, diffusion, live, streaming">
     
     <style>
         * {
@@ -46,60 +36,27 @@
             border-radius: 20px;
             padding: 50px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
+            max-width: 650px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.5s ease;
-        }
-        
-        /* États du fond */
-        body.initial {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        body.checking {
-            background: linear-gradient(135deg, #4A90E2 0%, #7B68EE 100%);
-        }
-        
-        body.live-found {
-            background: linear-gradient(135deg, #ff0000, #cc0000);
-        }
-        
-        body.no-live {
-            background: linear-gradient(135deg, #ffa726, #ff7043);
-        }
-        
-        body.error {
-            background: linear-gradient(135deg, #f44336, #d32f2f);
         }
         
         .icon {
             font-size: 80px;
             margin-bottom: 30px;
-        }
-        
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        .rotate {
-            animation: rotate 1s linear infinite;
+            animation: pulse 2s infinite ease-in-out;
         }
         
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
         
         h1 {
             font-size: 2.5em;
             margin-bottom: 20px;
             font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
         
         .subtitle {
@@ -112,7 +69,7 @@
         .btn {
             display: inline-block;
             padding: 18px 40px;
-            margin: 10px;
+            margin: 15px 10px;
             background: white;
             color: #333;
             text-decoration: none;
@@ -127,15 +84,24 @@
             overflow: hidden;
         }
         
-        .btn:hover:not(:disabled) {
-            transform: translateY(-2px);
+        .btn:hover {
+            transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
         
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: rgba(255, 255, 255, 0.5);
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #ff0000, #cc0000);
+            color: white;
+            font-size: 1.3em;
+            padding: 20px 45px;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #cc0000, #990000);
         }
         
         .btn-secondary {
@@ -144,62 +110,16 @@
             border: 2px solid rgba(255, 255, 255, 0.3);
         }
         
-        .btn-secondary:hover:not(:disabled) {
+        .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.3);
-        }
-        
-        /* Animation cooldown */
-        .btn-cooldown::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.3);
-            transform-origin: left;
-            animation: cooldownFill 15s linear forwards;
-        }
-        
-        @keyframes cooldownFill {
-            from { transform: scaleX(1); }
-            to { transform: scaleX(0); }
-        }
-        
-        .cooldown-text {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .stream-info {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 25px;
-            border-radius: 15px;
-            margin: 25px 0;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .stream-title {
-            font-size: 1.3em;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-        
-        .stream-meta {
-            font-size: 1em;
-            opacity: 0.9;
-        }
-        
-        .stream-meta > div {
-            margin: 8px 0;
+            border-color: rgba(255, 255, 255, 0.5);
         }
         
         .info-box {
             background: rgba(255, 255, 255, 0.1);
             padding: 25px;
             border-radius: 15px;
-            margin-top: 25px;
+            margin-top: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: left;
         }
@@ -208,55 +128,60 @@
             margin-bottom: 15px;
             text-align: center;
             font-size: 1.2em;
+            color: #FFD700;
         }
         
         .info-box p {
             margin: 10px 0;
             opacity: 0.9;
+            font-size: 1em;
         }
         
-        .stats {
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        .footer {
             position: fixed;
             bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px 20px;
-            border-radius: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 25px;
             font-size: 0.9em;
-            font-family: 'Courier New', monospace;
-            text-align: left;
+            opacity: 0.8;
         }
         
-        .stats div {
-            margin: 5px 0;
+        .feature-list {
+            list-style: none;
+            padding: 0;
         }
         
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-            vertical-align: middle;
+        .feature-list li {
+            margin: 8px 0;
+            padding-left: 25px;
+            position: relative;
         }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #00ff88;
+            font-weight: bold;
         }
-        
-        .error-details {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 15px;
-            font-size: 0.9em;
-            text-align: left;
-        }
-        
-        .hidden { display: none !important; }
         
         @media (max-width: 600px) {
             .container {
@@ -275,515 +200,126 @@
             .btn {
                 padding: 15px 30px;
                 font-size: 1.1em;
+                margin: 10px 5px;
             }
             
-            .stats {
+            .btn-primary {
+                padding: 18px 35px;
+                font-size: 1.2em;
+            }
+            
+            .footer {
                 bottom: 10px;
-                right: 10px;
                 font-size: 0.8em;
-                padding: 10px 15px;
+                padding: 8px 15px;
             }
         }
     </style>
 </head>
-<body class="initial">
+<body>
     <div class="container">
-        <!-- État initial -->
-        <div id="initial-state">
-            <div class="icon">📺</div>
-            <h1>Vérification des diffusions</h1>
-            <p class="subtitle">
-                Appuyez sur le bouton pour vérifier les diffusions en direct sur la chaîne YouTube
-            </p>
-            
-            <button class="btn" id="check-btn" onclick="checkStream()">
-                <span class="cooldown-text">🔍 Vérifier la diffusion</span>
-            </button>
-            
-            <button class="btn btn-secondary" onclick="openChannel()">
-                📺 Ouvrir la chaîne
-            </button>
-            
-            <div class="info-box">
-                <h4>💡 Comment ça marche</h4>
-                <p>• Cliquez sur le bouton pour vérifier la diffusion</p>
-                <p>• Après vérification - attente de 15 secondes</p>
-                <p>• Si diffusion détectée - redirection automatique</p>
-            </div>
-        </div>
+        <div class="icon">🔴</div>
+        <h1>Diffusion en direct</h1>
+        <p class="subtitle">
+            <span class="status-indicator"></span>
+            Cliquez sur le bouton pour accéder à la diffusion en direct de la chaîne
+        </p>
         
-        <!-- État de vérification -->
-        <div id="checking-state" class="hidden">
-            <div class="icon rotate">🔍</div>
-            <h1>Vérification...</h1>
-            <p class="subtitle">
-                <span class="loading-spinner"></span>
-                Connexion à l'API YouTube
-            </p>
-        </div>
+        <a href="https://www.youtube.com/channel/UC6u5Kliw-Ll-xipj-bKmxDQ/live" 
+           class="btn btn-primary" 
+           target="_blank"
+           onclick="trackClick('live')">
+            🎥 Regarder la diffusion
+        </a>
         
-        <!-- Diffusion trouvée -->
-        <div id="live-found-state" class="hidden">
-            <div class="icon pulse">🔴</div>
-            <h1>Diffusion en direct !</h1>
-            
-            <div class="stream-info">
-                <div class="stream-title" id="stream-title">Chargement...</div>
-                <div class="stream-meta">
-                    <div>👥 <span id="viewer-count">—</span></div>
-                    <div>⏱️ <span id="stream-duration">—</span></div>
-                    <div>🔗 <span id="stream-id">—</span></div>
-                </div>
-            </div>
-            
-            <a href="#" class="btn" id="watch-btn">
-                ▶️ Regarder la diffusion
-            </a>
-            
-            <button class="btn btn-secondary" onclick="checkAgain()">
-                🔄 Vérifier à nouveau
-            </button>
-            
-            <div class="subtitle" style="margin-top: 20px; font-size: 1em;">
-                Redirection automatique dans <span id="redirect-timer">5</span> secondes
-            </div>
-        </div>
+        <a href="https://www.youtube.com/channel/UC6u5Kliw-Ll-xipj-bKmxDQ" 
+           class="btn btn-secondary" 
+           target="_blank"
+           onclick="trackClick('channel')">
+            📺 Aller sur la chaîne
+        </a>
         
-        <!-- Pas de diffusion -->
-        <div id="no-live-state" class="hidden">
-            <div class="icon">😴</div>
-            <h1>Aucune diffusion</h1>
-            <p class="subtitle">
-                Aucune diffusion en direct n'est actuellement disponible
-            </p>
-            
-            <button class="btn" id="check-again-btn" onclick="checkStream()">
-                <span class="cooldown-text">🔄 Vérifier à nouveau</span>
-            </button>
-            
-            <button class="btn btn-secondary" onclick="openChannel()">
-                📺 Aller sur la chaîne
-            </button>
-            
-            <div id="last-check-info" class="subtitle" style="margin-top: 20px; font-size: 0.9em;">
-                Dernière vérification : <span id="last-check-time">—</span>
-            </div>
-        </div>
-        
-        <!-- Erreur -->
-        <div id="error-state" class="hidden">
-            <div class="icon">⚠️</div>
-            <h1>Erreur</h1>
-            <p class="subtitle" id="error-message">
-                Impossible de vérifier la diffusion
-            </p>
-            
-            <div class="error-details" id="error-details"></div>
-            
-            <button class="btn" onclick="checkStream()">
-                🔄 Réessayer
-            </button>
-            
-            <button class="btn btn-secondary" onclick="openChannel()">
-                📺 Ouvrir la chaîne directement
-            </button>
+        <div class="info-box">
+            <h4>💡 Comment ça marche</h4>
+            <ul class="feature-list">
+                <li>Si la diffusion est active - vous y accéderez directement</li>
+                <li>Si aucune diffusion - YouTube affichera une notification</li>
+            </ul>
         </div>
     </div>
     
-    <!-- Statistiques -->
-    <div class="stats">
-        <div>📊 Vérifications aujourd'hui : <span id="checks-today">0</span></div>
-        <div>⏱️ Avant vérification : <span id="cooldown-timer">prêt</span></div>
+    <div class="footer">
+        <span id="click-counter">Accès: 0</span> • 
+        Solution simple sans API
     </div>
     
     <script>
-        // Configuration
-        const YOUTUBE_API_KEY = 'AIzaSyB-RKtWqclVLo3ueilq61Wdg08B4O6qLUI';
-        const CHANNEL_ID = 'UC6u5Kliw-Ll-xipj-bKmxDQ';
-        const COOLDOWN_TIME = 15000; // 15 secondes
-        const REDIRECT_DELAY = 5; // 5 secondes avant redirection auto
+        // Compteur de clics (sauvegardé localement)
+        const STORAGE_KEY = 'live_clicks';
         
-        // États
-        let isChecking = false;
-        let cooldownEndTime = 0;
-        let redirectTimer = null;
-        let cooldownInterval = null;
-        
-        // Statistiques
-        const STATS_KEY = 'stream_stats';
-        
-        function getStats() {
-            try {
-                const stats = localStorage.getItem(STATS_KEY);
-                if (!stats) return { daily: 0, lastReset: new Date().toDateString() };
-                
-                const data = JSON.parse(stats);
-                // Réinitialisation quotidienne
-                if (data.lastReset !== new Date().toDateString()) {
-                    return { daily: 0, lastReset: new Date().toDateString() };
-                }
-                return data;
-            } catch (e) {
-                return { daily: 0, lastReset: new Date().toDateString() };
-            }
+        function getClickCount() {
+            return parseInt(localStorage.getItem(STORAGE_KEY) || '0');
         }
         
-        function incrementStats() {
-            const stats = getStats();
-            stats.daily++;
-            localStorage.setItem(STATS_KEY, JSON.stringify(stats));
-            return stats.daily;
+        function incrementClicks() {
+            const count = getClickCount() + 1;
+            localStorage.setItem(STORAGE_KEY, count.toString());
+            updateCounter();
+            return count;
         }
         
-        // Protection contre les bots des réseaux sociaux
-        function isBotTraffic() {
-            const ua = navigator.userAgent.toLowerCase();
-            const botPatterns = [
-                'facebookexternalhit',  // Facebook
-                'facebookcatalog',       // Facebook
-                'whatsapp',              // WhatsApp
-                'telegram',              // Telegram
-                'twitterbot',            // Twitter
-                'linkedinbot',           // LinkedIn
-                'slackbot',              // Slack
-                'discordbot',            // Discord
-                'vkshare',               // VKontakte
-                'yandex',                // Yandex
-                'google',                // Google
-                'bot', 'crawler', 'spider', 'scraper'
-            ];
-            
-            // Vérification User Agent
-            const isBot = botPatterns.some(pattern => ua.includes(pattern));
-            
-            // Vérifications supplémentaires
-            if (isBot) return true;
-            
-            // Vérification Headless Chrome
-            if (navigator.webdriver) return true;
-            
-            return false;
+        function updateCounter() {
+            document.getElementById('click-counter').textContent = 
+                `Accès: ${getClickCount()}`;
         }
         
-        // Fonctions UI
-        function setState(stateName) {
-            // Masquer tous les états
-            document.querySelectorAll('[id$="-state"]').forEach(el => {
-                el.classList.add('hidden');
-            });
+        function trackClick(type) {
+            incrementClicks();
             
-            // Afficher l'état souhaité
-            const stateEl = document.getElementById(stateName + '-state');
-            if (stateEl) {
-                stateEl.classList.remove('hidden');
-            }
+            // Journal (pour débogage)
+            console.log(`🎯 Accès à ${type === 'live' ? 'la diffusion' : 'la chaîne'}`);
+            console.log(`📊 Total accès: ${getClickCount()}`);
             
-            // Changer la classe du body pour le fond
-            document.body.className = stateName.replace('_', '-');
-        }
-        
-        // Fonction de vérification de diffusion
-        async function checkStream() {
-            if (isChecking) return;
-            
-            // Vérification cooldown
-            if (Date.now() < cooldownEndTime) {
-                const secondsLeft = Math.ceil((cooldownEndTime - Date.now()) / 1000);
-                alert(`Attendez ${secondsLeft} secondes avant la prochaine vérification`);
-                return;
-            }
-            
-            // Nouvelle requête API
-            isChecking = true;
-            setState('checking');
-            clearTimers();
-            
-            try {
-                // Recherche des diffusions
-                const searchUrl = 'https://www.googleapis.com/youtube/v3/search';
-                const searchParams = new URLSearchParams({
-                    part: 'snippet',
-                    channelId: CHANNEL_ID,
-                    type: 'video',
-                    eventType: 'live',
-                    key: YOUTUBE_API_KEY,
-                    maxResults: '1'
+            // Possibilité d'ajouter des analyses ici
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'click', {
+                    'event_category': 'YouTube',
+                    'event_label': type
                 });
-                
-                const response = await fetch(`${searchUrl}?${searchParams}`);
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur API: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Incrémenter le compteur
-                const dailyCount = incrementStats();
-                document.getElementById('checks-today').textContent = dailyCount;
-                
-                if (data.items && data.items.length > 0) {
-                    const stream = data.items[0];
-                    const streamData = {
-                        videoId: stream.id.videoId,
-                        title: stream.snippet.title,
-                        url: `https://youtube.com/watch?v=${stream.id.videoId}`,
-                        publishedAt: stream.snippet.publishedAt
-                    };
-                    
-                    // Obtenir les détails de la vidéo
-                    try {
-                        const detailsUrl = 'https://www.googleapis.com/youtube/v3/videos';
-                        const detailsParams = new URLSearchParams({
-                            part: 'liveStreamingDetails,statistics',
-                            id: streamData.videoId,
-                            key: YOUTUBE_API_KEY
-                        });
-                        
-                        const detailsResponse = await fetch(`${detailsUrl}?${detailsParams}`);
-                        if (detailsResponse.ok) {
-                            const details = await detailsResponse.json();
-                            if (details.items && details.items.length > 0) {
-                                streamData.viewers = details.items[0].liveStreamingDetails?.concurrentViewers;
-                                streamData.startTime = details.items[0].liveStreamingDetails?.actualStartTime;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn('Impossible d\'obtenir les détails:', e);
-                    }
-                    
-                    showLiveStream(streamData);
-                } else {
-                    showNoLive();
-                }
-                
-                updateStats();
-                startCooldown();
-                
-            } catch (error) {
-                console.error('Erreur:', error);
-                showError(error.message);
-            } finally {
-                isChecking = false;
             }
-        }
-        
-        // Afficher la diffusion
-        function showLiveStream(streamData) {
-            setState('live-found');
-            
-            document.getElementById('stream-title').textContent = streamData.title || 'Diffusion';
-            document.getElementById('stream-id').textContent = streamData.videoId;
-            
-            // Nombre de spectateurs
-            const viewerCount = streamData.viewers 
-                ? `${parseInt(streamData.viewers).toLocaleString('fr-FR')} spectateurs`
-                : 'En direct';
-            document.getElementById('viewer-count').textContent = viewerCount;
-            
-            // Durée
-            if (streamData.startTime) {
-                const start = new Date(streamData.startTime);
-                const now = new Date();
-                const minutes = Math.floor((now - start) / 60000);
-                const hours = Math.floor(minutes / 60);
-                const mins = minutes % 60;
-                
-                let duration = '';
-                if (hours > 0) {
-                    duration = `${hours} h ${mins} min`;
-                } else {
-                    duration = `${mins} min`;
-                }
-                document.getElementById('stream-duration').textContent = `En direct depuis ${duration}`;
-            } else {
-                document.getElementById('stream-duration').textContent = 'Début de la diffusion';
-            }
-            
-            // Lien
-            document.getElementById('watch-btn').href = streamData.url;
-            
-            // Redirection automatique
-            startRedirectCountdown(streamData.url);
-        }
-        
-        // Afficher absence de diffusion
-        function showNoLive() {
-            setState('no-live');
-            document.getElementById('last-check-time').textContent = 
-                new Date().toLocaleTimeString('fr-FR');
-        }
-        
-        // Afficher erreur
-        function showError(message) {
-            setState('error');
-            document.getElementById('error-message').textContent = 
-                'Une erreur s\'est produite lors de la vérification';
-            
-            const details = document.getElementById('error-details');
-            if (message.includes('403')) {
-                details.innerHTML = `
-                    <strong>Causes possibles :</strong><br>
-                    • Limite de requêtes API dépassée<br>
-                    • Clé API invalide<br>
-                    • Clé API non activée pour YouTube Data API
-                `;
-            } else {
-                details.textContent = `Information technique : ${message}`;
-            }
-        }
-        
-        // Cooldown du bouton
-        function startCooldown() {
-            cooldownEndTime = Date.now() + COOLDOWN_TIME;
-            
-            // Désactiver les boutons
-            const buttons = document.querySelectorAll('#check-btn, #check-again-btn');
-            buttons.forEach(btn => {
-                btn.disabled = true;
-                btn.classList.add('btn-cooldown');
-            });
-            
-            // Mettre à jour le timer
-            cooldownInterval = setInterval(() => {
-                const remaining = cooldownEndTime - Date.now();
-                
-                if (remaining <= 0) {
-                    clearInterval(cooldownInterval);
-                    
-                    // Réactiver les boutons
-                    buttons.forEach(btn => {
-                        btn.disabled = false;
-                        btn.classList.remove('btn-cooldown');
-                        const textEl = btn.querySelector('.cooldown-text');
-                        if (textEl) {
-                            textEl.textContent = btn.id === 'check-btn' 
-                                ? '🔍 Vérifier la diffusion' 
-                                : '🔄 Vérifier à nouveau';
-                        }
-                    });
-                    
-                    document.getElementById('cooldown-timer').textContent = 'prêt';
-                } else {
-                    const seconds = Math.ceil(remaining / 1000);
-                    document.getElementById('cooldown-timer').textContent = `${seconds} sec`;
-                    
-                    // Mettre à jour le texte des boutons
-                    buttons.forEach(btn => {
-                        const textEl = btn.querySelector('.cooldown-text');
-                        if (textEl) {
-                            textEl.textContent = `⏳ Attendez ${seconds} sec`;
-                        }
-                    });
-                }
-            }, 100);
-        }
-        
-        // Redirection automatique vers la diffusion
-        function startRedirectCountdown(url) {
-            let seconds = REDIRECT_DELAY;
-            const timerEl = document.getElementById('redirect-timer');
-            
-            redirectTimer = setInterval(() => {
-                seconds--;
-                timerEl.textContent = seconds;
-                
-                if (seconds <= 0) {
-                    clearInterval(redirectTimer);
-                    window.location.href = url;
-                }
-            }, 1000);
-        }
-        
-        // Vérifier à nouveau (depuis l'état live-found)
-        function checkAgain() {
-            clearTimers();
-            setState('initial');
-            checkStream();
-        }
-        
-        // Ouvrir la chaîne
-        function openChannel() {
-            window.open(`https://youtube.com/channel/${CHANNEL_ID}`, '_blank');
-        }
-        
-        // Nettoyage des timers
-        function clearTimers() {
-            if (redirectTimer) {
-                clearInterval(redirectTimer);
-                redirectTimer = null;
-            }
-        }
-        
-        // Mise à jour des statistiques
-        function updateStats() {
-            const stats = getStats();
-            document.getElementById('checks-today').textContent = stats.daily;
         }
         
         // Initialisation au chargement
-        window.addEventListener('load', () => {
-            // Bloquer les bots
-            if (isBotTraffic()) {
-                console.warn('🤖 Bot détecté - appels API désactivés');
-                console.warn('User Agent:', navigator.userAgent);
-                
-                // Logger la tentative du bot
-                try {
-                    const botStats = JSON.parse(localStorage.getItem('bot_attempts') || '[]');
-                    botStats.push({
-                        time: new Date().toISOString(),
-                        ua: navigator.userAgent.substring(0, 100)
-                    });
-                    // Garder seulement les 50 dernières entrées
-                    if (botStats.length > 50) botStats.shift();
-                    localStorage.setItem('bot_attempts', JSON.stringify(botStats));
-                } catch(e) {}
-                
-                document.body.innerHTML = `
-                    <div style="padding: 40px; text-align: center; font-family: Arial;">
-                        <h1>🔴 Vérification des diffusions</h1>
-                        <p>Chaîne YouTube : ${CHANNEL_ID}</p>
-                        <p>Pour vérifier les diffusions, ouvrez la page dans un navigateur</p>
-                    </div>
-                `;
-                return; // Arrêt complet du script pour les bots
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCounter();
             
-            console.log('🚀 Stream Checker v3.0 - Mode Manuel');
-            console.log('📺 Chaîne:', CHANNEL_ID);
-            console.log('⏱️ Cooldown:', COOLDOWN_TIME / 1000, 'sec');
-            console.log('👤 User Agent:', navigator.userAgent);
-            
-            // Afficher les statistiques des bots si disponibles
-            const botAttempts = JSON.parse(localStorage.getItem('bot_attempts') || '[]');
-            if (botAttempts.length > 0) {
-                console.log(`🤖 Bots bloqués : ${botAttempts.length}`);
-            }
-            
-            setState('initial');
-            updateStats();
-            
-            // Vérifier s'il y a un cooldown sauvegardé
-            const savedCooldown = localStorage.getItem('last_check_time');
-            if (savedCooldown) {
-                const timePassed = Date.now() - parseInt(savedCooldown);
-                if (timePassed < COOLDOWN_TIME) {
-                    cooldownEndTime = parseInt(savedCooldown) + COOLDOWN_TIME;
-                    startCooldown();
-                }
-            }
+            console.log('🚀 YouTube Live Checker v2.0 - Version simple');
+            console.log('📺 Chaîne: UC6u5Kliw-Ll-xipj-bKmxDQ');
+            console.log('🔗 Sans clés API ni limitations');
         });
         
-        // Sauvegarder le temps de vérification à la fermeture
-        window.addEventListener('beforeunload', () => {
-            if (cooldownEndTime > Date.now()) {
-                localStorage.setItem('last_check_time', cooldownEndTime - COOLDOWN_TIME);
-            }
-            clearTimers();
-            if (cooldownInterval) {
-                clearInterval(cooldownInterval);
-            }
+        // Ajout d'effet de survol pour le bouton de diffusion
+        const liveBtn = document.querySelector('.btn-primary');
+        liveBtn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px) scale(1.02)';
+        });
+        
+        liveBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+        
+        // Animation de l'icône lors du clic
+        function animateIcon() {
+            const icon = document.querySelector('.icon');
+            icon.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                icon.style.transform = 'scale(1)';
+            }, 200);
+        }
+        
+        // Ajout d'animation aux boutons
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', animateIcon);
         });
     </script>
 </body>
